@@ -47,8 +47,6 @@ const handlePushEvent = async (payload) => {
   
   console.log(`Received ${commits.length} commits from GitLab`);
   
-  let hasJiraReferences = false;
-  
   // Process each commit
   for (const commit of commits) {
     const { id, message, author, url } = commit;
@@ -56,31 +54,27 @@ const handlePushEvent = async (payload) => {
     // Parse the commit message to extract Jira card info
     const parsedInfo = parseCommitMessage(message);
     
+    // Format the message for WhatsApp
+    const whatsAppMessage = formatCommitMessage({
+      id,
+      author,
+      project: project || repository,
+      type: parsedInfo.type,
+      jiraCard: parsedInfo.jiraCard,
+      message: parsedInfo.cleanMessage || message,
+      url,
+      userName: user_name || author.name,
+      hasJiraReference: parsedInfo.hasJiraReference
+    });
+    
+    // Send the message to WhatsApp
+    await sendWhatsAppMessage(whatsAppMessage);
+    
     if (parsedInfo.hasJiraReference) {
-      hasJiraReferences = true;
-      
-      // Format the message for WhatsApp
-      const whatsAppMessage = formatCommitMessage({
-        id,
-        author,
-        project: project || repository,
-        type: parsedInfo.type,
-        jiraCard: parsedInfo.jiraCard,
-        message: parsedInfo.cleanMessage,
-        url,
-        userName: user_name || author.name
-      });
-      
-      // Send the message to WhatsApp
-      await sendWhatsAppMessage(whatsAppMessage);
       console.log(`Sent notification for commit ${id.substring(0, 8)} with Jira reference ${parsedInfo.jiraCard}`);
     } else {
-      console.log(`Skipping commit ${id.substring(0, 8)} - No Jira reference found`);
+      console.log(`Sent notification for commit ${id.substring(0, 8)}`);
     }
-  }
-  
-  if (!hasJiraReferences) {
-    console.log('No commits with Jira references found in this push');
   }
 };
 
@@ -121,28 +115,30 @@ const handlePipelineEvent = async (payload) => {
     commitType = parsedInfo.type;
   }
   
-  // Send notification for all pipelines OR ones with Jira references
-  if (hasJiraReference || object_attributes.status === 'failed') {
-    const pipelineData = {
-      id: object_attributes.id,
-      status: object_attributes.status,
-      project: project,
-      user: user,
-      ref: object_attributes.ref,
-      sha: object_attributes.sha,
-      jiraCard,
-      commitType,
-      url: `${project.web_url}/pipelines/${object_attributes.id}`,
-      duration: object_attributes.duration
-    };
-    
-    const whatsAppMessage = formatPipelineMessage(pipelineData);
-    
-    // Send the message to WhatsApp
-    await sendWhatsAppMessage(whatsAppMessage);
-    console.log(`Sent notification for pipeline ${object_attributes.id} with status ${object_attributes.status}`);
+  // Send notification for all pipelines
+  const pipelineData = {
+    id: object_attributes.id,
+    status: object_attributes.status,
+    project: project,
+    user: user,
+    ref: object_attributes.ref,
+    sha: object_attributes.sha,
+    jiraCard,
+    commitType,
+    url: `${project.web_url}/pipelines/${object_attributes.id}`,
+    duration: object_attributes.duration,
+    hasJiraReference
+  };
+  
+  const whatsAppMessage = formatPipelineMessage(pipelineData);
+  
+  // Send the message to WhatsApp
+  await sendWhatsAppMessage(whatsAppMessage);
+  
+  if (hasJiraReference) {
+    console.log(`Sent notification for pipeline ${object_attributes.id} with status ${object_attributes.status} and Jira reference ${jiraCard}`);
   } else {
-    console.log(`Skipping pipeline ${object_attributes.id} - No Jira reference found and status is not critical`);
+    console.log(`Sent notification for pipeline ${object_attributes.id} with status ${object_attributes.status}`);
   }
 };
 
@@ -191,34 +187,35 @@ const handleMergeRequestEvent = async (payload) => {
     }
   }
   
-  // Always notify on new, merged or approved MRs, or if it has a Jira reference
-  const importantActions = ['open', 'merge', 'approved'];
-  if (hasJiraReference || importantActions.includes(object_attributes.action)) {
-    const mrData = {
-      id: object_attributes.iid,
-      title: object_attributes.title,
-      description: object_attributes.description,
-      state: object_attributes.state,
-      action: object_attributes.action,
-      url: object_attributes.url,
-      source: object_attributes.source_branch,
-      target: object_attributes.target_branch,
-      project: project,
-      user: user,
-      createdAt: object_attributes.created_at,
-      updatedAt: object_attributes.updated_at,
-      jiraCard,
-      commitType,
-      labels: labels || []
-    };
-    
-    const whatsAppMessage = formatMergeRequestMessage(mrData);
-    
-    // Send the message to WhatsApp
-    await sendWhatsAppMessage(whatsAppMessage);
-    console.log(`Sent notification for merge request !${object_attributes.iid} with action ${object_attributes.action}`);
+  // Send notification for all merge requests
+  const mrData = {
+    id: object_attributes.iid,
+    title: object_attributes.title,
+    description: object_attributes.description,
+    state: object_attributes.state,
+    action: object_attributes.action,
+    url: object_attributes.url,
+    source: object_attributes.source_branch,
+    target: object_attributes.target_branch,
+    project: project,
+    user: user,
+    createdAt: object_attributes.created_at,
+    updatedAt: object_attributes.updated_at,
+    jiraCard,
+    commitType,
+    labels: labels || [],
+    hasJiraReference
+  };
+  
+  const whatsAppMessage = formatMergeRequestMessage(mrData);
+  
+  // Send the message to WhatsApp
+  await sendWhatsAppMessage(whatsAppMessage);
+  
+  if (hasJiraReference) {
+    console.log(`Sent notification for merge request !${object_attributes.iid} with action ${object_attributes.action} and Jira reference ${jiraCard}`);
   } else {
-    console.log(`Skipping merge request !${object_attributes.iid} - No Jira reference found and action is not critical`);
+    console.log(`Sent notification for merge request !${object_attributes.iid} with action ${object_attributes.action}`);
   }
 };
 

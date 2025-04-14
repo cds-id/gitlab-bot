@@ -18,7 +18,8 @@ const formatCommitMessage = (data) => {
     jiraCard,
     message,
     url,
-    userName
+    userName,
+    hasJiraReference
   } = data;
 
   // Get emoji based on commit type
@@ -30,22 +31,43 @@ const formatCommitMessage = (data) => {
   // Format commit ID (shorter for readability)
   const shortId = id?.substring(0, 8) || 'Unknown';
   
+  // Format the title based on whether there's a Jira reference
+  const title = hasJiraReference 
+    ? `*${emoji} New Commit: ${jiraCard}*` 
+    : `*${emoji} New Commit*`;
+  
   // Format the message
-  return `
-*${emoji} New Commit: ${jiraCard}*
+  let formattedMessage = `
+${title}
 
 *Project:* ${projectName}
 *Commit:* \`${shortId}\`
-*Author:* ${author?.name || userName || 'Unknown'} ${author?.email ? `<${author.email}>` : ''}
-*Type:* ${type || 'N/A'} ${emoji}
-*Jira:* ${formatJiraLink(jiraCard)}
-*Branch:* ${data.branch || 'Unknown'}
+*Author:* ${author?.name || userName || 'Unknown'} ${author?.email ? `<${author.email}>` : ''}`;
+
+  // Add type and Jira info if available
+  if (type) {
+    formattedMessage += `\n*Type:* ${type} ${emoji}`;
+  }
+  
+  if (hasJiraReference) {
+    formattedMessage += `\n*Jira:* ${formatJiraLink(jiraCard)}`;
+  }
+  
+  // Add branch if available
+  if (data.branch) {
+    formattedMessage += `\n*Branch:* \`${data.branch}\``;
+  }
+  
+  // Add commit message
+  formattedMessage += `
 
 *Message:* 
 ${message}
 
 ${url ? `*URL:* ${url}` : ''}
 `;
+
+  return formattedMessage;
 };
 
 /**
@@ -65,7 +87,8 @@ const formatPipelineMessage = (data) => {
     jiraCard,
     commitType,
     url,
-    duration
+    duration,
+    hasJiraReference
   } = data;
 
   // Get emoji based on pipeline status
@@ -90,10 +113,10 @@ const formatPipelineMessage = (data) => {
 `;
 
   // Add Jira information if available
-  if (jiraCard) {
+  if (hasJiraReference && jiraCard) {
     message += `
 *Jira:* ${formatJiraLink(jiraCard)}
-*Type:* ${commitType || 'N/A'} ${typeEmoji}
+${commitType ? `*Type:* ${commitType} ${typeEmoji}` : ''}
 `;
   }
 
@@ -127,7 +150,8 @@ const formatMergeRequestMessage = (data) => {
     commitType,
     labels,
     createdAt,
-    updatedAt
+    updatedAt,
+    hasJiraReference
   } = data;
 
   // Get emoji for the action
@@ -149,7 +173,7 @@ const formatMergeRequestMessage = (data) => {
 `;
 
   // Add Jira information if available
-  if (jiraCard) {
+  if (hasJiraReference && jiraCard) {
     message += `
 *Jira:* ${formatJiraLink(jiraCard)}
 ${commitType ? `*Type:* ${commitType} ${typeEmoji}` : ''}
