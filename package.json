@@ -1,0 +1,35 @@
+{
+  "name": "gitlab-bot",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:webhook": "node tests/simulate-webhook.js",
+    "test:whatsapp": "node tests/test-whatsapp.js",
+    "test:parser": "node tests/test-parser.js",
+    "test:pipeline": "node tests/simulate-pipeline.js",
+    "test:merge": "node tests/simulate-merge-request.js"
+  },
+  "keywords": [
+    "gitlab",
+    "webhook",
+    "whatsapp",
+    "notification",
+    "jira"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "GitLab webhook service that forwards commit notifications to WhatsApp when Jira references are found",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "body-parser": "^2.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "uuid": "^11.1.0"
+  }
+}
