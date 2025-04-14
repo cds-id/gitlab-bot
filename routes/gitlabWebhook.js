@@ -96,7 +96,7 @@ const handlePipelineEvent = async (payload) => {
   }
   
   // Only notify on important pipeline status changes
-  const notifiableStatuses = ['success', 'failed', 'canceled'];
+  const notifiableStatuses = ['success', 'failed', 'canceled','running'];
   
   if (!notifiableStatuses.includes(object_attributes.status)) {
     console.log(`Ignoring pipeline status: ${object_attributes.status}`);
