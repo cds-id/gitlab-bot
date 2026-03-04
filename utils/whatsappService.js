@@ -17,7 +17,8 @@ const sendWhatsAppMessage = async (message) => {
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
-        'Authorization': process.env.WHATSAPP_API_AUTH
+        'Authorization': process.env.WHATSAPP_API_AUTH,
+        'x-device-id': process.env.WHATSAPP_DEVICE_ID
       },
       data: {
         phone: process.env.WHATSAPP_GROUP_ID,
