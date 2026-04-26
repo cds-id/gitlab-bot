@@ -4,12 +4,13 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 /**
- * Send a message to the configured WhatsApp group
- * 
+ * Send a message to a WhatsApp group
+ *
  * @param {string} message - The message to send
+ * @param {string} [groupId] - Target WhatsApp group ID. Defaults to WHATSAPP_GROUP_ID env var.
  * @returns {Promise<object>} - Response from the WhatsApp API
  */
-const sendWhatsAppMessage = async (message) => {
+const sendWhatsAppMessage = async (message, groupId) => {
   try {
     const response = await axios({
       method: 'post',
@@ -21,7 +22,7 @@ const sendWhatsAppMessage = async (message) => {
         'x-device-id': process.env.WHATSAPP_DEVICE_ID
       },
       data: {
-        phone: process.env.WHATSAPP_GROUP_ID,
+        phone: groupId || process.env.WHATSAPP_GROUP_ID,
         message: message
       }
     });
